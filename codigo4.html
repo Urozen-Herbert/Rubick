@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Generador de Código QR con Logo Personalizado </title>
+    <link rel="stylesheet" href="estilos.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>Generador de QR Urozen <br>(patentado por Sebastian Ospina)</h1>
+
+        <div class="input-group">
+            <label for="digitLength">Cantidad de dígitos:</label>
+            <input type="number" id="digitLength" min="1" max="20" placeholder="Ej: 5">
+            <button onclick="generateRandomQRCode()">Generar QR con Número Aleatorio </button>
+        </div>
+
+        <div class="input-group">
+            <label for="urlInput">URL para QR:</label>
+            <input type="text" id="urlInput" placeholder="Pega una URL aquí">
+            <button onclick="generateURLQRCode()">Generar QR de URL</button>
+        </div>
+
+        <div class="input-group">
+            <label for="logoInput">Subir logo:</label>
+            <input type="file" id="logoInput" accept="image/*" onchange="loadLogo(event)">
+        </div>
+
+        <div class="input-group">
+            <label for="logoWidth">Ancho del logo (px):</label>
+            <input type="number" id="logoWidth" min="1" value="100">
+            <label for="logoHeight">Alto del logo (px):</label>
+            <input type="number" id="logoHeight" min="1" value="100">
+        </div>
+
+        <div class="input-group">
+            <label for="qrColor">Color del QR:</label>
+            <input type="color" id="qrColor" value="#4b0082" onchange="updateQRCodeColor()">
+        </div>
+
+        <div id="qrcode"></div>
+
+        <p id="generatedNumber">Número generado: </p>
+
+        <button onclick="downloadQRCode()">Descargar QR</button>
+    </div>
+
+    <script>
+        let generatedNumbers = new Set(); // Almacenar números únicos generados
+        let logoImage = null; // Imagen del logo cargada
+        let qrColor = "#4b0082"; // Color inicial del QR
+
+        function generateRandomNumber(digitLength) {
+            let number;
+            do {
+                number = Math.floor(Math.random() * (10 ** digitLength));
+                number = number.toString().padStart(digitLength, '0');
+            } while (generatedNumbers.has(number));
+            generatedNumbers.add(number);
+            return number;
+        }
+
+        function generateRandomQRCode() {
+            const digitLength = document.getElementById('digitLength').value;
+            if (!digitLength) {
+                alert("Por favor, ingresa la cantidad de dígitos.");
+                return;
+            }
+
+            const randomNumber = generateRandomNumber(digitLength);
+            document.getElementById('generatedNumber').textContent = "Número generado: " + randomNumber;
+            generateQRCode(randomNumber);
+        }
+
+        function generateURLQRCode() {
+            const url = document.getElementById('urlInput').value;
+            if (!url) {
+                alert("Por favor, ingresa una URL.");
+                return;
+            }
+            document.getElementById('generatedNumber').textContent = "URL generada: " + url;
+            generateQRCode(url);
+        }
+
+        function generateQRCode(content) {  //editar calidad //
+            const qrContainer = document.getElementById('qrcode');
+            qrContainer.innerHTML = ""; // Limpiar QR previo
+
+            const qrCanvas = document.createElement('canvas');
+            qrCanvas.width = 1500; //300//  
+            qrCanvas.height = 1500; //300// 
+            const context = qrCanvas.getContext('2d');
+
+            const qrCode = new QRCode(qrContainer, {
+                text: content,
+                width: 1500,//300// 
+                height: 1500,//300// 
+                colorDark: qrColor,
+                colorLight: "#ffffff",
+            });
+
+            setTimeout(() => {
+                const qrImage = qrContainer.getElementsByTagName('img')[0];
+                context.drawImage(qrImage, 0, 0, 1500, 1500); //300// 
+
+                if (logoImage) {
+                    const logoWidth = document.getElementById('logoWidth').value || 100;
+                    const logoHeight = document.getElementById('logoHeight').value || 100;
+                    const x = (qrCanvas.width - logoWidth) / 2;
+                    const y = (qrCanvas.height - logoHeight) / 2;
+                    context.drawImage(logoImage, x, y, logoWidth, logoHeight);
+                }
+
+                qrContainer.innerHTML = "";
+                qrContainer.appendChild(qrCanvas);
+            }, 100);
+        }
+
+        function updateQRCodeColor() {
+            qrColor = document.getElementById('qrColor').value;
+            const currentContent = document.getElementById('generatedNumber').textContent.replace("Número generado: ", "").replace("URL generada: ", "").trim();
+            if (currentContent) {
+                generateQRCode(currentContent);
+            }
+        }
+
+        function loadLogo(event) {
+            const file = event.target.files[0];
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                logoImage = new Image();
+                logoImage.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        function downloadQRCode() {
+            const qrContainer = document.getElementById('qrcode').getElementsByTagName('canvas')[0];
+            if (!qrContainer) {
+                alert("Primero genera un código QR.");
+                return;
+            }
+
+            const link = document.createElement('a');
+            link.href = qrContainer.toDataURL("image/png");
+            link.download = 'codigo_qr.png';
+            link.click();
+        }
+    </script>
+</body>
+</html>
